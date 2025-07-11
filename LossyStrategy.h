@@ -1,6 +1,10 @@
 #ifndef LOSSYSTRATEGY_H
 #define LOSSYSTRATEGY_H
-#include <stdint.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <cmath>
+
 namespace Lossy {
 
 class BaseStrategy {

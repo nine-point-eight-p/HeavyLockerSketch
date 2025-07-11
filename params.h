@@ -2,7 +2,7 @@
 #define _PARAMS_H
 #define KEY_LEN 13 
 #define FP_LEN 32             //the lenth of flowid
-int node_num=1;               //the num of switches in distribution 
+extern int node_num;          //the num of switches in distribution 
 #define MAX_INSERT 100000000  //maximum number of packets
 #define N 100000000           //maximum flow size
 #define M 100000              //maximum number of flows

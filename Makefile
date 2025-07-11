@@ -1,12 +1,29 @@
-CPPFLAGS = -Wall -O3 -std=c++14 -lm -w -mcmodel=medium -g
-PROGRAMS = merge
+CXX = g++
+CPPFLAGS = -Wall -O3 -std=c++14 -g
+LDFLAGS = -lm
 
-all: $(PROGRAMS)
+TARGET = merge_add
+SRCS = $(wildcard *.cpp)
+OBJS = $(SRCS:.cpp=.o)
+DEPS = $(SRCS:.cpp=.d)
 
-merge: mergetest.cpp BaseSketch.h\
-	BOBHASH32.h BOBHASH64.h params.h ssummary.h CMSketch.h ElasticSketch.h \
-	MVSketch.h Uss.h DASketch.h newMSketch.h goodMSketch.h
-	g++ -o merge_add mergetest.cpp $(CPPFLAGS)
+all: $(TARGET)
+
+-include $(DEPS)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CPPFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+%.d: %.cpp
+	@set -e; \
+	$(CC) -M $(CFLAGS) $< > $@.tmp; \
+	sed 's,\($(notdir $*)\)\.o[ :]*,\1.o $@ : ,g' < $@.tmp > $@; \
+	rm -f $@.tmp
 
 clean:
-	rm -f *.o $(PROGRAMS)
+	rm -f $(TARGET) $(OBJS) $(DEPS)
+
+.PHONY: all clean
