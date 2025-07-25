@@ -43,7 +43,7 @@ unsigned long long DASketch::Hash(std::string ST)
 
 void DASketch::insert(const std::string& x)
 {
-    char *fp = const_cast<char *>(x.c_str());
+    const char *fp = x.c_str();
     int h = bobhash->run(fp, KEY_LEN) % M2;
     bool match = false;
     bool empty = false;
@@ -92,33 +92,25 @@ void DASketch::insert(const std::string& x)
             bk[h].cells[minp].ID = x;
             bk[h].cells[minp].Cs = minv + 1;
             bk[h].cells[minp].Cr = 1;
-            unsigned long long hash[CMM_d];
-            for (int i = 0; i < CMM_d; i++)
-            {
-                char *fp = const_cast<char *>(evicted.c_str());
-                fp[KEY_LEN] = '0' + i;
-                hash[i] = bobhash->run(fp, KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
-            }
 
+            evicted.push_back('0');
             for (int i = 0; i < CMM_d; i++)
             {
-                HK[i][hash[i]].C += evicted_cr;
+                evicted[KEY_LEN] = '0' + i;
+                auto hash = bobhash->run(evicted.c_str(), KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
+                HK[i][hash].C += evicted_cr;
             }
             total += evicted_cr;
         }
         else
         {
-            unsigned long long hash[CMM_d];
+            std::string hash_key = x;
+            hash_key.push_back('0');
             for (int i = 0; i < CMM_d; i++)
             {
-                char *fp = const_cast<char *>(x.c_str());
-                fp[KEY_LEN] = '0' + i;
-                hash[i] = bobhash->run(fp, KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
-            }
-
-            for (int i = 0; i < CMM_d; i++)
-            {
-                HK[i][hash[i]].C++;
+                hash_key[KEY_LEN] = '0' + i;
+                auto hash = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
+                HK[i][hash].C++;
             }
             total++;
         }
@@ -272,23 +264,6 @@ int DASketch::merge(int thresh, int opt)
     for (bigflow = 0; q[bigflow].y > thresh && bigflow < CNT; bigflow++)
         ;
     return bigflow;
-}
-
-std::pair<std::string, int> DASketch::query_top(int k)
-{
-    return make_pair(q[k].x, q[k].y);
-}
-
-int DASketch::query(const std::string &str)
-{
-    if (allflowname.find(str) != allflowname.end())
-    {
-        return allflowname[str];
-    }
-    else
-    {
-        return 0;
-    }
 }
 
 std::string DASketch::get_name()

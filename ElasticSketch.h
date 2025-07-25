@@ -33,8 +33,6 @@ public:
 	void insert(const std::string &str) override;
 	void work(int n) override;
 	int merge(int thresh, int opt = 0) override;
-	std::pair<std::string, int> query_top(int k) override;
-	int query(const std::string &str) override;
 	std::string get_name() override;
 };
 #endif

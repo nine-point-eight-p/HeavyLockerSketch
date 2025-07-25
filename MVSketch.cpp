@@ -64,23 +64,6 @@ void MVSketch::insert(const std::string& str)
     }
 }
 
-std::pair<std::string, int> MVSketch::query_top(int k)
-{
-    return make_pair(q[k].x, q[k].y);
-}
-
-int MVSketch::query(const std::string& str)
-{
-    if (allflowname.find(str) != allflowname.end())
-    {
-        return allflowname[str];
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 void MVSketch::work(int n)
 {
     for (int d = 0; d < MV_d; d++)

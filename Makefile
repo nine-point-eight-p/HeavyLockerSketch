@@ -1,29 +1,28 @@
 CXX = g++
-CPPFLAGS = -Wall -O3 -std=c++14 -g
+CPPFLAGS = -Wall -O3 -std=c++14 -g -MMD -MP
 LDFLAGS = -lm
 
-TARGET = merge_add
+BUILD_DIR = build
+
+TARGET = $(BUILD_DIR)/merge_add
 SRCS = $(wildcard *.cpp)
-OBJS = $(SRCS:.cpp=.o)
-DEPS = $(SRCS:.cpp=.d)
+OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
+DEPS = $(SRCS:%.cpp=$(BUILD_DIR)/%.d)
 
 all: $(TARGET)
 
 -include $(DEPS)
 
-$(TARGET): $(OBJS)
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(TARGET): $(OBJS) | $(BUILD_DIR)
 	$(CXX) $(CPPFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
-%.o: %.cpp
+$(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 	$(CXX) $(CPPFLAGS) -c $< -o $@
 
-%.d: %.cpp
-	@set -e; \
-	$(CC) -M $(CFLAGS) $< > $@.tmp; \
-	sed 's,\($(notdir $*)\)\.o[ :]*,\1.o $@ : ,g' < $@.tmp > $@; \
-	rm -f $@.tmp
-
 clean:
-	rm -f $(TARGET) $(OBJS) $(DEPS)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: all clean

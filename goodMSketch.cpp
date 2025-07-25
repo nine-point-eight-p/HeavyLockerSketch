@@ -55,12 +55,13 @@ bool MSketch::plus(bucket_t *b, int j)
 void MSketch::insert(const std::string &key)
 {
     total_packet++;
-    char *fp = const_cast<char *>(key.c_str());
+    std::string hash_key = key;
+    hash_key.push_back('0');
     int point = 0, min = INT32_MAX;
     for (int i = 0; i < hashnum; i++)
     {
-        fp[KEY_LEN] = '0' + i;
-        hash[i] = bobhash->run(fp, KEY_LEN + 1) % (bucket_num);
+        hash_key[KEY_LEN] = '0' + i;
+        hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (bucket_num);
         for (int j = depth; j >= 1; j--)
         {
             if (bucket[hash[i]].fingerprint[j - 1] == key && bucket[hash[i]].counter[j - 1] != 0)
@@ -90,19 +91,15 @@ void MSketch::insert(const std::string &key)
     return;
 }
 
-std::pair<std::string, int> MSketch::query_top(int k)
-{
-    return make_pair(q[k].x, q[k].y);
-}
-
 int MSketch::query(const std::string& str)
 {
     int result = 0;
-    char *fp = const_cast<char *>(str.c_str());
+    std::string hash_key = str;
+    hash_key.push_back('0');
     for (int i = 0; i < hashnum; i++)
     {
-        fp[KEY_LEN] = '0' + i;
-        hash[i] = bobhash->run(fp, KEY_LEN + 1) % (bucket_num);
+        hash_key[KEY_LEN] = '0' + i;
+        hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (bucket_num);
         for (int j = depth - 1; j >= 0; j--)
         {
             if (bucket[hash[i]].fingerprint[j] == str)
@@ -139,9 +136,10 @@ int MSketch::merge(int thresh, int opt)
         {
             for (int d = depth - 1; d >= 0; d--)
             {
-                if (temp.find(mergename[j][d][i]) != temp.end())
+                auto it = temp.find(mergename[j][d][i]);
+                if (it != temp.end())
                 {
-                    temp[mergename[j][d][i]] += mergeresult1[j][d][i];
+                    it->second += mergeresult1[j][d][i];
                 }
                 else
                 {
@@ -183,7 +181,7 @@ int MSketch::merge(int thresh, int opt)
 
 std::string MSketch::get_name()
 {
-    return "Mysketch";
+    return "MySketch";
 }
 
 MSketch::~MSketch()

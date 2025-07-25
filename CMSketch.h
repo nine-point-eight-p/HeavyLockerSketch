@@ -24,11 +24,9 @@ public:
 	CMSketch(int Mem, int Knum);
 	~CMSketch();
 
-	void insert(const std::string &x) override;
-	std::pair<std::string, int> query_top(int k) override;
-	int query(const std::string &str) override;
-	void work(int n) override;
 	void clear() override;
+	void insert(const std::string &x) override;
+	void work(int n) override;
 	int merge(int thresh, int opt = false) override;
 	std::string get_name() override;
 

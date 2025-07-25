@@ -216,23 +216,6 @@ int ElasticSketch::merge(int thresh, int opt)
     return bigflow;
 }
 
-std::pair<std::string, int> ElasticSketch::query_top(int k)
-{
-    return make_pair(q[k].x, q[k].y);
-}
-
-int ElasticSketch::query(const std::string &str)
-{
-    if (allflowname.find(str) != allflowname.end())
-    {
-        return allflowname[str];
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 std::string ElasticSketch::get_name()
 {
     return "ElasticSketch";

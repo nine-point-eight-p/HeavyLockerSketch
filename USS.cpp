@@ -34,11 +34,12 @@ void HyperUSS::insert(const std::string &x)
 {
 	int minv = 0x7fffffff;
 	unsigned long long hash[HU_d];
-	char *fp = const_cast<char *>(x.c_str());
+	std::string hash_key = x;
+	hash_key.push_back('0');
 	for (int i = 0; i < HU_d; i++)
 	{
-		fp[KEY_LEN] = '0' + i;
-		hash[i] = bobhash->run(fp, KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
+		hash_key[KEY_LEN] = '0' + i;
+		hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
 	}
 
 	bool flag0 = false, flag1 = false;
@@ -151,12 +152,13 @@ int HyperUSS::merge(int thresh, int opt)
 	}
 	for (auto it = allflowname.begin(); it != allflowname.end(); it++)
 	{
-		char *fp = const_cast<char *>(it->first.c_str());
+		std::string hash_key = it->first;
+		hash_key.push_back('0');
 		int result = 0;
 		for (int i = 0; i < HU_d; i++)
 		{
-			fp[KEY_LEN] = '0' + i;
-			hash[i] = bobhash->run(fp, KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
+			hash_key[KEY_LEN] = '0' + i;
+			hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
 			if (HK[i][hash[i]].ID == it->first)
 			{
 				result += HK[i][hash[i]].C;
@@ -175,24 +177,7 @@ int HyperUSS::merge(int thresh, int opt)
 	return bigflow;
 }
 
-std::pair<std::string, int> HyperUSS::query_top(int k)
-{
-	return make_pair(q[k].x, q[k].y);
-}
-
-int HyperUSS::query(const std::string &str)
-{
-	if (allflowname.find(str) != allflowname.end())
-	{
-		return allflowname[str];
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 std::string HyperUSS::get_name()
 {
-	return "hyperuss";
+	return "HyperUSS";
 }
