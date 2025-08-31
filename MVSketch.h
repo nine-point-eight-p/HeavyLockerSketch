@@ -10,17 +10,17 @@
 class MVSketch : public sketch::BaseSketch
 {
 private:
-	struct node
+	struct Bucket
 	{
-		int C, S;
-		std::string FP;
-	} HK[MV_d][MAX_MEM + 10];
-	BOBHash64 *bobhash_[MV_d];
-	BOBHash64 *bobhash;
-	int K, M2, sum;
+		int v, c;
+		std::string key;
+	};
+	Bucket *buckets[MV_d];
+	BOBHash64 *bobhash[MV_d];
+	int col_num;
 
 public:
-	MVSketch(int M2);
+	MVSketch(int col_num);
 	~MVSketch();
 
 	void clear() override;
