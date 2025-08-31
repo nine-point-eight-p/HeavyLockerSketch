@@ -12,8 +12,9 @@
 class WavingSketch : public sketch::BaseSketch
 {
 public:
-    static constexpr int CELL_NUM = 16;
-    static constexpr int COUNTER_NUM = 10;
+    // Static parameters
+    static constexpr int CELL_NUM = 8;
+    static constexpr int COUNTER_NUM = 1;
     static constexpr double FACTOR = 1.0;
 
 private:
@@ -32,14 +33,14 @@ private:
     int bucket_num;
     BOBHash32 *bobhash_bucket, *bobhash_s, *bobhash_counter;
 
+    static bool is_clear;
+
 public:
     WavingSketch(int bucket_num);
     ~WavingSketch();
 
     void clear() override;
     void insert(const std::string &str) override;
-    // std::pair<std::string, int> query_top(int k) override;
-    // int query(const std::string& str) override;
     void work(int n) override;
     int merge(int thresh, int opt = false) override;
     std::string get_name() override;

@@ -4,6 +4,8 @@
 #include "WavingSketch.h"
 #include "result.h"
 
+bool WavingSketch::is_clear = false;
+
 static constexpr int SIGN[2] = {1, -1};
 
 WavingSketch::WavingSketch(int bucket_num)
@@ -55,15 +57,7 @@ void WavingSketch::insert(const std::string &key)
     int min_freq = INT_MAX, min_pos = -1;
     for (int i = 0; i < CELL_NUM; ++i)
     {
-        if (bucket.cells[i].freq == 0)
-        {
-            // Case 2: item does not exist in bucket, and bucket is NOT full
-            // TODO: return is_empty = true?
-            bucket.cells[i].id = key;
-            bucket.cells[i].freq = -1;
-            return;
-        }
-        else if (bucket.cells[i].id == key)
+        if (bucket.cells[i].id == key)
         {
             // Case 1: item exists in bucket
             if (bucket.cells[i].freq < 0)
@@ -76,8 +70,16 @@ void WavingSketch::insert(const std::string &key)
                 // flag is true (error item)
                 bucket.cells[i].freq++;
                 bucket.counters[counter_pos] += sign;
-                return;
             }
+            return;
+        }
+        else if (bucket.cells[i].freq == 0)
+        {
+            // Case 2: item does not exist in bucket, and bucket is NOT full
+            // TODO: return is_empty = true?
+            bucket.cells[i].id = key;
+            bucket.cells[i].freq = -1;
+            return;
         }
 
         int freq_val = std::abs(bucket.cells[i].freq);
@@ -115,6 +117,13 @@ void WavingSketch::insert(const std::string &key)
 
 void WavingSketch::work(int n)
 {
+    if (!is_clear)
+    {
+        for (auto it = allflowname.begin(); it != allflowname.end(); ++it)
+            it->second = 0;
+        is_clear = true;
+    }
+
     for (int i = 0; i < bucket_num; ++i)
     {
         for (int j = 0; j < CELL_NUM; ++j)
