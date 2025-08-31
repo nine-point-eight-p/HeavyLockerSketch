@@ -25,6 +25,7 @@ int MEM=50;          //Memory per node (KB)
 #include "USS.h"
 #include "DASketch.h"
 #include "WavingSketch.h"
+#include "LDSketch.h"
 
 using std::cout, std::cerr, std::endl;
 using std::ifstream, std::ofstream, std::ios;
@@ -68,14 +69,12 @@ void clear(){
 		it->second=0;
     }
 	
-	// Clear the merge arrays properly - only clear the reasonable size we allocated
-	int reasonable_merge_size = std::min(10000, MAX_MEM/100);
 	for(int i=0;i<10;i++){
 		for(int j=0;j<10;j++){
 			for(int k=0;k<MAX_MEM;k++) {
 				mergename[i][j][k].clear();
-				}
 			}
+		}
 	}
 	memset(mergeresult1, 0, sizeof(mergeresult1));
 	memset(mergeresult2, 0, sizeof(mergeresult2));
@@ -133,6 +132,9 @@ void resolve() {
 	cout<<"hashnum="<<hashnum<<endl;
 	cout<<"can occur same flow?"<<can_occur_same<<endl;
     cout<<"**********preparing all algorithms**********"<<endl;
+
+	int threshold = packet_num * hh;//get the threshold of the big flow
+
 	//CMsketch
 	int method=0;
 	int CM_M,K;
@@ -185,6 +187,29 @@ void resolve() {
 	}
 	method++;
 
+	// Waving Sketch
+	int waving_bucket_num = 1;
+	int waving_bucket_size = 64 * WavingSketch::CELL_NUM + 32 * WavingSketch::COUNTER_NUM;
+	while (waving_bucket_size * waving_bucket_num <= MEM * 1024 * 8)
+		waving_bucket_num++;
+	waving_bucket_num--;
+	cout << "Waving" << waving_bucket_num << endl;
+	for (int i = 0; i < node_num; i++)
+		func[method].push_back(new WavingSketch(waving_bucket_num));
+	method++;
+
+	// TODO: unit memory size
+	// LD-Sketch
+	int ld_col_num = 1;
+	int ld_bucket_size = 64 * LDSketch::ARRAY_SIZE + 32 * 3;
+	while (ld_bucket_size * LDSketch::ROW_NUM * ld_col_num <= MEM * 1024 * 8)
+		ld_col_num++;
+	ld_col_num--;
+	cout << "LD" << ld_col_num << endl;
+	for (int i = 0; i < node_num; i++)
+		func[method].push_back(new LDSketch(ld_col_num, threshold));
+	method++;
+
 	//My method
 	int My_M;
 	for (My_M=1; 64*My_M*depth<=MEM*1024*8; My_M++);
@@ -197,7 +222,6 @@ void resolve() {
 
 	//Read the dataset
 	timespec time1, time2;
-	int threshold = packet_num * hh;//get the threshold of the big flow
 
 	//Clear
 	for(int z=0;z<method;z++){
@@ -226,6 +250,12 @@ void resolve() {
 	//Work and merge
 	cout<<"work and merge"<<endl;
 	for(int z=0;z<method;z++){
+		// TODO: clear allflowname out of merge
+		// for (auto it = allflowname.begin(); it != allflowname.end(); ++it)
+		// {
+		// 	it->second = 0;
+		// }
+
 		clock_gettime(CLOCK_MONOTONIC, &time1);
 		for(int i=0;i<node_num;i++){
 			func[z][i]->work(i);
@@ -326,8 +356,8 @@ int main(int argc, char** argv){
     	    "MEM" << ","<<"name" << ","  << 
 			"trueHH"<<","<<"findHH"<<","<<
     	    "right_in_find"<<"," << 
+			"precision"<< "," <<
 			"recall"<< "," << 
-			"percision"<< "," <<
 			"F1 score"<< "," <<
     	    "AAE" << "," << 
     	    "ARE" << "," << 
