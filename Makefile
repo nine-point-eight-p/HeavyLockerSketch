@@ -1,5 +1,5 @@
 CXX = g++
-CPPFLAGS = -Wall -O3 -std=c++14 -g -MMD -MP
+CPPFLAGS = -Wall -O3 -std=c++14 -g -MMD -MP -mcmodel=medium
 LDFLAGS = -lm
 
 BUILD_DIR = build

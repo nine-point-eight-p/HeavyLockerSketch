@@ -72,22 +72,14 @@ void clear(){
 	int reasonable_merge_size = std::min(10000, MAX_MEM/100);
 	for(int i=0;i<10;i++){
 		for(int j=0;j<10;j++){
-			for(int k=0;k<reasonable_merge_size;k++){
-				if(mergename && mergename[i] && mergename[i][j]) {
-					mergename[i][j][k]="";
+			for(int k=0;k<MAX_MEM;k++) {
+				mergename[i][j][k].clear();
 				}
 			}
-			if(mergeresult1 && mergeresult1[i] && mergeresult1[i][j]) {
-				memset(mergeresult1[i][j], 0, reasonable_merge_size * sizeof(int));
-			}
-			if(mergeresult2 && mergeresult2[i] && mergeresult2[i][j]) {
-				memset(mergeresult2[i][j], 0, reasonable_merge_size * sizeof(int));
-			}
-			if(mergeresult3 && mergeresult3[i] && mergeresult3[i][j]) {
-				memset(mergeresult3[i][j], 0, reasonable_merge_size * sizeof(int));
-			}
-		}
 	}
+	memset(mergeresult1, 0, sizeof(mergeresult1));
+	memset(mergeresult2, 0, sizeof(mergeresult2));
+	memset(mergeresult3, 0, sizeof(mergeresult3));
 }
 
 /********************Output the results to csv or command line********************/
