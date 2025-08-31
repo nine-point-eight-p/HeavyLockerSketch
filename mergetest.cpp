@@ -3,28 +3,17 @@
 #include <cstdlib>
 #include <fstream>
 #include <algorithm>
-#include <time.h>
+#include <ctime>
 #include <unordered_map>
 #include <map>
 #include <vector>
 #include <string>
 #include <cstring>
 #include <sstream>
-#include <string.h>
 #include "unistd.h"
 #include "params.h"
 #include "result.h"
 #include "BOBHash64.h"
-/********************Store intermediate data for aggregation********************/
-// unordered_map<string,int> allflowname;
-// struct Node { string x; int y; };
-// Node *q = nullptr, *p = nullptr;  // Allocate dynamically
-// int cmp(Node i, Node j) { return i.y > j.y;}
-// string ***mergename = nullptr;  // Allocate dynamically
-// int ***mergeresult1 = nullptr;  // Allocate dynamically  
-// int ***mergeresult2 = nullptr;  // Allocate dynamically
-// int ***mergeresult3 = nullptr;  // Allocate dynamically
-// int totalnum[10];
 
 /********************Import different methods********************/
 double  hh=0.0001;   //Define the threshold of big flows
@@ -35,7 +24,10 @@ int MEM=50;          //Memory per node (KB)
 #include "goodMSketch.h"
 #include "USS.h"
 #include "DASketch.h"
-using namespace std;
+#include "WavingSketch.h"
+
+using std::cout, std::cerr, std::endl;
+using std::ifstream, std::ofstream, std::ios;
 
 /********************Store results********************/
 std::map<std::string, int> AAE;           
@@ -44,15 +36,15 @@ std::map<std::string, int> _sum;          //The true num of big flows detected b
 std::map<std::string, int> _all;          //The num of big flows detected by methods
 std::map<std::string, double> insert_time;//time to insert all the packages
 std::map<std::string, double> query_time; //time to merge and query the HH
-vector<string> s[10];
+std::vector<std::string> s[10];
 std::vector<sketch::BaseSketch*> func[10];//Store different methods to facilitate the calls of interfaces
-map <string ,int> B,C;
+std::map<std::string, int> B, C;
 int bigflow;
 int packet_num=0;
 
 //***********************************Parameters****************************//
 bool can_occur_same=true;				  //Whether the same flow can be present on different nodes (have influence on accuracy)
-string resultFile = "None"; 			  //Outputfile
+std::string resultFile = "None"; 			  //Outputfile
 char dataset[60]="0.dat";				  //Dataset
 
 /********************Clean intermediate data for calls in loop********************/
@@ -60,24 +52,24 @@ void clear(){
 	for(int i=0;i<10;i++){
 		func[i].clear();
 	}
-	for(map<string,int>::iterator it=_sum.begin();it!=_sum.end();it++){
+	for(auto it = _sum.begin();it!=_sum.end();it++){
 		it->second=0;
     }
-	for(unordered_map<string,int>::iterator it=allflowname.begin();it!=allflowname.end();it++){
+	for(auto it = allflowname.begin();it!=allflowname.end();it++){
 		it->second=0;
     }
-	for(map<string,double>::iterator it=ARE.begin();it!=ARE.end();it++){
+	for(auto it=ARE.begin();it!=ARE.end();it++){
 		it->second=0;
     }
-	for(map<string,int>::iterator it=AAE.begin();it!=AAE.end();it++){
+	for(auto it=AAE.begin();it!=AAE.end();it++){
 		it->second=0;
     }
-	for(map<string,int>::iterator it=_all.begin();it!=_all.end();it++){
+	for(auto it=_all.begin();it!=_all.end();it++){
 		it->second=0;
     }
 	
 	// Clear the merge arrays properly - only clear the reasonable size we allocated
-	int reasonable_merge_size = min(10000, MAX_MEM/100);
+	int reasonable_merge_size = std::min(10000, MAX_MEM/100);
 	for(int i=0;i<10;i++){
 		for(int j=0;j<10;j++){
 			for(int k=0;k<reasonable_merge_size;k++){
@@ -321,7 +313,7 @@ int main(int argc, char** argv){
 		if (fin.eof()) break;
         packet_num++;
 		tmp[KEY_LEN]='\0';
-		string temp(tmp, KEY_LEN);
+		std::string temp(tmp, KEY_LEN);
 		long long which;
 		if(can_occur_same==false){
 			which=smallhash->run(temp.c_str(), KEY_LEN)%node_num;
@@ -334,38 +326,6 @@ int main(int argc, char** argv){
     printf("flow num = %d\n", packet_num);
     printf("flow type = %d\n", (int)B.size());
 	
-	// Now allocate arrays based on actual needs
-	int actual_flows = B.size();
-	int safe_flow_count = actual_flows + 1000; // Add some buffer
-	
-	// Allocate Node arrays with proper size
-	q = new Node[safe_flow_count];
-	p = new Node[safe_flow_count];
-	cerr << "Allocated memory for " << safe_flow_count << " flows (actual: " << actual_flows << ")" << endl;
-	
-	// Allocate 3D arrays - only allocate what's needed for merge operations
-	// Most sketch algorithms don't need the full MAX_MEM dimension
-	int reasonable_merge_size = min(10000, MAX_MEM/100); // Much more reasonable size
-	
-	mergename = new string**[10];
-	mergeresult1 = new int**[10];
-	mergeresult2 = new int**[10];
-	mergeresult3 = new int**[10];
-	
-	for(int i = 0; i < 10; i++) {
-		mergename[i] = new string*[10];
-		mergeresult1[i] = new int*[10];
-		mergeresult2[i] = new int*[10];
-		mergeresult3[i] = new int*[10];
-		
-		for(int j = 0; j < 10; j++) {
-			mergename[i][j] = new string[reasonable_merge_size];
-			mergeresult1[i][j] = new int[reasonable_merge_size];
-			mergeresult2[i][j] = new int[reasonable_merge_size];
-			mergeresult3[i][j] = new int[reasonable_merge_size];
-		}
-	}
-	cerr << "Allocated merge arrays with size " << reasonable_merge_size << endl;
 	/********************Processing output file********************/
 	if(resultFile!="None"){
 		ofstream in(resultFile);
@@ -386,7 +346,7 @@ int main(int argc, char** argv){
 	}
 	/********************prepare the true result********************/
 	int cnt=0;
-    for (map <string,int>::iterator sit=B.begin(); sit!=B.end(); sit++)
+    for (auto sit=B.begin(); sit!=B.end(); sit++)
     {
         p[cnt].x=sit->first;
         p[cnt].y=sit->second;
