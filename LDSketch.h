@@ -2,37 +2,40 @@
 #define LDSKETCH_H
 
 #include <unordered_map>
-#include <cstdint>
 
 #include "BaseSketch.h"
 
-class LDSketch : sketch::BaseSketch
+class LDSketch : public sketch::BaseSketch
 {
+public:
+    // Static parameters
+    static constexpr int ROW_NUM = 4;
+    static constexpr int ARRAY_SIZE = 8;
+
 private:
     struct Bucket
     {
         // A_{i,j}: associative array
         // TODO: LD-aware hash?
-        std::unordered_map<std::string, int64_t> array;
+        std::unordered_map<std::string, int> array;
         // V_{i,j}: total sum
-        int64_t total;
+        int total;
         // l_{i,j}: max length of counters allowed
-        uint32_t max_len;
+        int max_len;
         // e_{i,j}: total number of decrement
-        uint32_t decrement;
-        // T: expansion parameter
-        int64_t T;
+        int decrement;
     };
-
-    Bucket **buckets;
-    int row_num, col_num;
-    int counter_num;
+    
+    Bucket *buckets[ROW_NUM];
+    int col_num;
+    // T: expansion parameter
+    int T;
 
     int find_bucket(const std::string &key, int row_idx) const;
     void update_bucket(const std::string &key, int val, int row_idx, int col_idx);
 
 public:
-    LDSketch(int row_num, int col_num, int counter_num, int thresh);
+    LDSketch(int col_num, int thresh);
     ~LDSketch();
 
     void clear() override;
