@@ -43,8 +43,7 @@ unsigned long long DASketch::Hash(std::string ST)
 
 void DASketch::insert(const std::string& x)
 {
-    const char *fp = x.c_str();
-    int h = bobhash->run(fp, KEY_LEN) % M2;
+    int h = bobhash->run(x.c_str(), x.length()) % M2;
     bool match = false;
     bool empty = false;
     int minv = 0x7fffffff;
@@ -96,8 +95,8 @@ void DASketch::insert(const std::string& x)
             evicted.push_back('0');
             for (int i = 0; i < CMM_d; i++)
             {
-                evicted[KEY_LEN] = '0' + i;
-                auto hash = bobhash->run(evicted.c_str(), KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
+                evicted.back() = '0' + i;
+                auto hash = bobhash->run(evicted.c_str(), evicted.length()) % (M2 - (2 * CMM_d) + 2 * i + 3);
                 HK[i][hash].C += evicted_cr;
             }
             total += evicted_cr;
@@ -108,8 +107,8 @@ void DASketch::insert(const std::string& x)
             hash_key.push_back('0');
             for (int i = 0; i < CMM_d; i++)
             {
-                hash_key[KEY_LEN] = '0' + i;
-                auto hash = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * CMM_d) + 2 * i + 3);
+                hash_key.back() = '0' + i;
+                auto hash = bobhash->run(hash_key.c_str(), hash_key.length()) % (M2 - (2 * CMM_d) + 2 * i + 3);
                 HK[i][hash].C++;
             }
             total++;

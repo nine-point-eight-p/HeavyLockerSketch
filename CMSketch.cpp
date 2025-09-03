@@ -43,11 +43,10 @@ void CMSketch::insert(const std::string& x)
     int minv = 0x7fffffff;
     std::string hash_key = x;
     hash_key.push_back('0');
-    assert(hash_key.size() == KEY_LEN + 1);
     for (int i = 0; i < CM_d; i++)
     {
-        hash_key[KEY_LEN] = '0' + i;
-        auto hash = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * CM_d) + 2 * i + 3);
+        hash_key.back() = '0' + i;
+        auto hash = bobhash->run(hash_key.c_str(), hash_key.length()) % (M2 - (2 * CM_d) + 2 * i + 3);
         HK[i][hash].C++;
         minv = std::min(minv, HK[i][hash].C);
     }

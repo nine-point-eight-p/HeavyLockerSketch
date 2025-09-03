@@ -35,9 +35,8 @@ void ElasticSketch::clear()
 
 void ElasticSketch::insert(const std::string &str)
 {
-    unsigned int H1 = bobhash->run(str.c_str(), KEY_LEN) % M1;
-    unsigned int temphash;
-    temphash = bobhash_->run(str.c_str(), KEY_LEN) % M2;
+    unsigned int H1 = bobhash->run(str.c_str(), str.length()) % M1;
+    unsigned int temphash = bobhash_->run(str.c_str(), str.length()) % M2;
     unsigned int min_size = MAX_INSERT;
     int min_pos = -1;
     int flag = 0;
@@ -175,9 +174,9 @@ int ElasticSketch::merge(int thresh, int opt)
 
     for (auto it = allflowname.begin(); it != allflowname.end(); it++)
     {
-        std::string str = it->first;
-        unsigned int H1 = bobhash->run(str.c_str(), KEY_LEN) % M1;
-        unsigned int temphash = bobhash_->run(str.c_str(), KEY_LEN) % M2;
+        const std::string &str = it->first;
+        unsigned int H1 = bobhash->run(str.c_str(), str.length()) % M1;
+        unsigned int temphash = bobhash_->run(str.c_str(), str.length()) % M2;
         unsigned int maxv;
         int flag = 0;
         maxv = 0;

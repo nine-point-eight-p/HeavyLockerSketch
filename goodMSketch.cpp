@@ -22,9 +22,16 @@ MSketch::MSketch(uint _bucket, double _hh_ratio)
     }
 }
 
-unsigned long long MSketch::Hash(std::string ST)
+MSketch::~MSketch()
 {
-    return (bobhash->run(ST.c_str(), ST.size()));
+    for (int i = 0; i < 1; i++)
+    {
+        delete[] bucket;
+    }
+    for (int i = 0; i < 1; i++)
+    {
+        delete bobhash;
+    }
 }
 
 void MSketch::clear()
@@ -60,8 +67,8 @@ void MSketch::insert(const std::string &key)
     int point = 0, min = INT32_MAX;
     for (int i = 0; i < hashnum; i++)
     {
-        hash_key[KEY_LEN] = '0' + i;
-        hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (bucket_num);
+        hash_key.back() = '0' + i;
+        hash[i] = bobhash->run(hash_key.c_str(), hash_key.length()) % (bucket_num);
         for (int j = depth; j >= 1; j--)
         {
             if (bucket[hash[i]].fingerprint[j - 1] == key && bucket[hash[i]].counter[j - 1] != 0)
@@ -98,8 +105,8 @@ int MSketch::query(const std::string& str)
     hash_key.push_back('0');
     for (int i = 0; i < hashnum; i++)
     {
-        hash_key[KEY_LEN] = '0' + i;
-        hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (bucket_num);
+        hash_key.back() = '0' + i;
+        hash[i] = bobhash->run(hash_key.c_str(), hash_key.length()) % (bucket_num);
         for (int j = depth - 1; j >= 0; j--)
         {
             if (bucket[hash[i]].fingerprint[j] == str)
@@ -182,16 +189,4 @@ int MSketch::merge(int thresh, int opt)
 std::string MSketch::get_name()
 {
     return "MySketch";
-}
-
-MSketch::~MSketch()
-{
-    for (int i = 0; i < 1; i++)
-    {
-        delete[] bucket;
-    }
-    for (int i = 0; i < 1; i++)
-    {
-        delete bobhash;
-    }
 }

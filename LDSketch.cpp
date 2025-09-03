@@ -1,8 +1,10 @@
 #include <algorithm>
-#include <cstdint>
 #include <climits>
+#include <cstdint>
 #include <unordered_map>
 #include <utility>
+
+#include <cassert>
 
 #include "LDSketch.h"
 #include "result.h"
@@ -193,7 +195,7 @@ void LDSketch::update_bucket(const std::string &key, int val, int row_idx, int c
             bucket.array[key] = val - cur_decrement;
         // }
     }
-    // assert(bucket.array.size() <= ARRAY_SIZE);
+    assert(bucket.array.size() <= ARRAY_SIZE);
 }
 
 int LDSketch::low_estimate(const std::string &key) const
@@ -216,19 +218,11 @@ int LDSketch::up_estimate(const std::string &key) const
     {
         int j = find_bucket(key, i);
         auto it = buckets[i][j].array.find(key);
-        // NOTE: different from original paper, skip the rows without the key
-        // instead of counting them as 0
-        // if (it == buckets[i][j].array.end())
-        //     continue;
-        // int cur_val = it->second + buckets[i][j].decrement;
-        // TODO
         int cur_val = it != buckets[i][j].array.end()
                         ? it->second + buckets[i][j].decrement
                         : 0;
         val = std::min(val, cur_val);
     }
-    // if (val == INT_MAX)
-    //    val = 0;
     return val;
 }
 

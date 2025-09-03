@@ -38,8 +38,8 @@ void HyperUSS::insert(const std::string &x)
 	hash_key.push_back('0');
 	for (int i = 0; i < HU_d; i++)
 	{
-		hash_key[KEY_LEN] = '0' + i;
-		hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
+		hash_key.back() = '0' + i;
+		hash[i] = bobhash->run(hash_key.c_str(), hash_key.length()) % (M2 - (2 * HU_d) + 2 * i + 3);
 	}
 
 	bool flag0 = false, flag1 = false;
@@ -157,8 +157,8 @@ int HyperUSS::merge(int thresh, int opt)
 		int result = 0;
 		for (int i = 0; i < HU_d; i++)
 		{
-			hash_key[KEY_LEN] = '0' + i;
-			hash[i] = bobhash->run(hash_key.c_str(), KEY_LEN + 1) % (M2 - (2 * HU_d) + 2 * i + 3);
+			hash_key.back() = '0' + i;
+			hash[i] = bobhash->run(hash_key.c_str(), hash_key.length()) % (M2 - (2 * HU_d) + 2 * i + 3);
 			if (HK[i][hash[i]].ID == it->first)
 			{
 				result += HK[i][hash[i]].C;

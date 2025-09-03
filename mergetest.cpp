@@ -1,23 +1,17 @@
 #include <iostream>
-#include <cstdio>
-#include <cstdlib>
 #include <fstream>
-#include <algorithm>
+#include <cstdio>
 #include <ctime>
 #include <unordered_map>
 #include <map>
 #include <vector>
 #include <string>
 #include <cstring>
-#include <sstream>
 #include "unistd.h"
 #include "params.h"
 #include "result.h"
 #include "BOBHash64.h"
 
-/********************Import different methods********************/
-double  hh=0.0001;   //Define the threshold of big flows
-int MEM=50;          //Memory per node (KB)
 #include "CMSketch.h"
 #include "ElasticSketch.h"
 #include "MVSketch.h"
@@ -28,7 +22,7 @@ int MEM=50;          //Memory per node (KB)
 #include "LDSketch.h"
 
 using std::cout, std::cerr, std::endl;
-using std::ifstream, std::ofstream, std::ios;
+using std::ios;
 
 /********************Store results********************/
 std::map<std::string, int> AAE;           
@@ -44,9 +38,12 @@ int bigflow;
 int packet_num=0;
 
 //***********************************Parameters****************************//
-bool can_occur_same=true;				  //Whether the same flow can be present on different nodes (have influence on accuracy)
-std::string resultFile = "None"; 			  //Outputfile
-char dataset[60]="0.dat";				  //Dataset
+double hh = 0.0001;                       // Define the threshold of big flows
+int MEM = 50;                             // Memory per node (KB)
+bool can_occur_same = true;				  // Whether the same flow can be present on different nodes (have influence on accuracy)
+std::string output_file; 		          // Output file
+std::string dataset_file = "0.dat";       // Dataset
+std::string config_file = "config.txt";   // Config file
 
 /********************Clean intermediate data for calls in loop********************/
 void clear(){
@@ -83,10 +80,10 @@ void clear(){
 
 /********************Output the results to csv or command line********************/
 void writeResultToCSV(int n) {
-	ofstream in(resultFile, ios::app);
-    if (in.is_open()) {
+	std::ofstream fout(output_file, ios::app);
+    if (fout.is_open()) {
         for (int z=0;z<n;z++) {
-			if(resultFile=="None"){
+			if(output_file.empty()){
 				cout << 
             	    "MEM  " << MEM << ","<< endl <<
 					"name  " << func[z][0]->get_name() << ","  << endl <<
@@ -102,7 +99,7 @@ void writeResultToCSV(int n) {
             	    "query  " << 1000.0 * packet_num/query_time[func[z][0]->get_name()] << "," << endl << 
 					endl;
 			}else{
-		    	in << 
+		    	fout << 
             	    MEM <<"KB"<< ","<<func[z][0]->get_name() << ","  << 
 					bigflow<<","<<_all[func[z][0]->get_name()]<<","<<
             	    _sum[func[z][0]->get_name()]<<"," << 
@@ -115,7 +112,7 @@ void writeResultToCSV(int n) {
             	    1000.0 * packet_num/query_time[func[z][0]->get_name()] << "," << endl;
 			}
 	    }
-        in.close();
+        fout.close();
     } else {
         cout << "Unable to open file" << endl;
     }
@@ -125,7 +122,7 @@ void writeResultToCSV(int n) {
 void resolve() {
 	clear();
 	bool debug=false;
-	cout<<"dataset: "<<dataset<<endl;
+	cout<<"dataset: "<<dataset_file<<endl;
     cout<<"MEM="<<MEM<<"KB"<<endl;
 	cout<<"Node_num="<<node_num<<endl;
 	cout<<"Thresh="<<hh<<endl;
@@ -198,7 +195,6 @@ void resolve() {
 		func[method].push_back(new WavingSketch(waving_bucket_num));
 	method++;
 
-	// TODO: unit memory size
 	// LD-Sketch
 	int ld_col_num = 1;
 	int ld_bucket_size = 64 * LDSketch::ARRAY_SIZE + 32 * 3;
@@ -282,77 +278,104 @@ void resolve() {
 	writeResultToCSV(method);
 }
 
-void parse() {
+// example:./merge -d 0.dat -m 50 -n 3 -s 1 -t 0.0002
+void parseArgs(int argc, char **argv)
+{
+	int c;
+	while ((c = getopt(argc, argv, "d:c:o:m:n:s:t:r:e:l:h:")) != -1)
+	{
+		switch (c)
+		{
+		case 'd': // the path of dataset
+			dataset_file = optarg;
+			break;
+		case 'c': // the path of config file
+			config_file = optarg;
+			break;
+		case 'o': // the path of output file
+			output_file = optarg;
+			break;
+		case 'm': // memeory in KB
+			MEM = atoi(optarg);
+			break;
+		case 'n': // num of nodes
+			node_num = atoi(optarg);
+			break;
+		case 's': // whether the same flow can be present on different nodes
+			can_occur_same = atoi(optarg);
+			break;
+		case 't': // the threshold of heavyhitter
+			hh = atof(optarg);
+			break;
+		case 'e': // the depth of heavylocker
+			depth = atoi(optarg);
+			break;
+		case 'l': // the lock_thresh of heavyLocker
+			lock_thre = atof(optarg);
+			break;
+		case 'h': // the num of hash functions
+			hashnum = atoi(optarg);
+			break;
+		}
+	}
+}
 
+std::unordered_map<std::string, int> parseConfig() {
+	std::ifstream fin(config_file);
+	if (!fin)
+	{
+		cerr << "Config file does not exist!" << endl;
+		exit(-1);	
+	}
+	
+	std::unordered_map<std::string, int> result;
+	std::string line;
+	while (std::getline(fin, line))
+	{
+		int p = line.find('=');
+		result[line.substr(0, p)] = atoi(line.substr(p + 1).c_str());
+	}
+	return result;
 }
 
 int main(int argc, char** argv){
-	int c;
-	while((c=getopt(argc, argv, "d:o:m:n:s:t:r:e:l:h:"))!=-1) {//example:./merge -d 0.dat -m 50 -n 3 -s 1 -t 0.0002
-        switch(c) {
-            case 'd'://the path of dataset
-                strcpy(dataset,optarg);
-                break;
-            case 'o'://the path of outputfile
-                resultFile=optarg;
-                break;
-            case 'm'://memeory in KB
-                MEM=atoi(optarg);
-                break;
-			case 'n'://num of nodes
-				node_num=atoi(optarg);
-				node_num=node_num;
-				break;
-			case 's'://whether the same flow can be present on different nodes
-				can_occur_same=atoi(optarg);
-				break;
-			case 't'://the threshold of heavyhitter
-				hh=atof(optarg);
-				break;
-			case 'e'://the depth of heavylocker
-				depth=atoi(optarg);
-				break;
-			case 'l'://the lock_thresh of heavyLocker
-				lock_thre=atof(optarg);
-				break;
-			case 'h'://the num of hash functions
-				hashnum=atoi(optarg);
-				break;
-        }
-    }
-
-	/********************Allocate dynamic memory for large arrays********************/
-	// First read the dataset to determine actual memory needs
-	ifstream fin(dataset, ios::in|ios::binary);
+	// Parse arguments
+	parseArgs(argc, argv);
+	
+	// Load config
+	auto config = parseConfig();
+	int entry_len = config["entry_len"];
+	int key_start = config["key_start"];
+	int key_len = config["key_len"];
+	
+	std::ifstream fin(dataset_file, ios::in|ios::binary);
 	if(!fin) {printf("Dataset not exists!\n");return -1;}
-	char tmp[105];
+	char buf[105];
 	BOBHash64 * smallhash=new BOBHash64(node_num);
 	
 	// Read dataset and count unique flows
 	for (int i = 1; i <= MAX_INSERT; i++)
 	{
-		fin.read(tmp, KEY_LEN);
+		fin.read(buf, entry_len);
 		if (fin.eof()) break;
+		buf[entry_len] = '\0';
         packet_num++;
-		tmp[KEY_LEN]='\0';
-		std::string temp(tmp, KEY_LEN);
-		long long which;
-		if(can_occur_same==false){
-			which=smallhash->run(temp.c_str(), KEY_LEN)%node_num;
-		}else{
-			which=rand()%node_num;
-		}
-		s[which].push_back(temp);
-		B[temp]++;
+		
+		std::string key(buf + key_start, key_len);
+		auto which = can_occur_same
+			? rand() % node_num
+			: smallhash->run(key.c_str(), key_len) % node_num;
+		s[which].push_back(key);
+		B[key]++;
 	}
     printf("flow num = %d\n", packet_num);
     printf("flow type = %d\n", (int)B.size());
 	
 	/********************Processing output file********************/
-	if(resultFile!="None"){
-		ofstream in(resultFile);
-    	if (in.is_open()) {
-			in << 
+	if(!output_file.empty()){
+		std::ofstream fout(output_file);
+    	if (fout.is_open()) {
+			fout << 
     	    "MEM" << ","<<"name" << ","  << 
 			"trueHH"<<","<<"findHH"<<","<<
     	    "right_in_find"<<"," << 
@@ -363,7 +386,7 @@ int main(int argc, char** argv){
     	    "ARE" << "," << 
     	    "insert" << "," <<
     	    "query" << "," << endl;
-    	in.close();
+			fout.close();
 		}
 	}
 	/********************prepare the true result********************/

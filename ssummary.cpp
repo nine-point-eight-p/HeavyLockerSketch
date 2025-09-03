@@ -41,7 +41,7 @@ int ssummary::getid()
 
 int ssummary::location(const std::string& ST)
 {
-    return (bobhash->run(ST.c_str(), KEY_LEN)) % len2;
+    return (bobhash->run(ST.c_str(), ST.length())) % len2;
 }
 
 void ssummary::add2(int x, int y)

@@ -43,7 +43,7 @@ void MVSketch::insert(const std::string &str)
 {
     for (int i = 0; i < MV_d; i++)
     {
-        int j = bobhash[i]->run(str.c_str(), KEY_LEN) % col_num;
+        int j = bobhash[i]->run(str.c_str(), str.length()) % col_num;
         buckets[i][j].v++;
         if (buckets[i][j].key == str)
         {
@@ -125,7 +125,8 @@ int MVSketch::merge(int thresh, int opt)
         int freq = INT_MAX;
         for (int i = 0; i < MV_d; i++)
         {
-            int j = bobhash[i]->run(it->first.c_str(), KEY_LEN) % col_num;
+            const std::string &key = it->first;
+            int j = bobhash[i]->run(key.c_str(), key.length()) % col_num;
             int estimate = buckets[i][j].key == it->first
                                ? (buckets[i][j].v + buckets[i][j].c) / 2
                                : (buckets[i][j].v - buckets[i][j].c) / 2;
